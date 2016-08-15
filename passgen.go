@@ -20,9 +20,11 @@ const (
 
 var policy = printable
 var size = 64
+var cnt = 1
 
 func init() {
 	flag.IntVar(&size, "s", size, "password-length")
+	flag.IntVar(&cnt, "n", cnt, "number of passwords to generate")
 	flag.StringVar(&policy, "p", policy, "policy: {p:printable a:alpha n:num an:alphanum")
 }
 
@@ -30,6 +32,12 @@ func main() {
 	flag.Parse()
 	filter := newFilter(policy)
 
+	for n := 0; n < cnt; n++ {
+		generate(filter)
+	}
+}
+
+func generate(filter Filter) {
 	f, e := os.Open("/dev/random")
 	if e != nil {
 		os.Exit(onError("on open", e))
@@ -51,8 +59,6 @@ func main() {
 		i++
 	}
 	fmt.Println()
-
-	os.Exit(0)
 }
 
 type Filter [256]bool
