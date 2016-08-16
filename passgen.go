@@ -51,7 +51,7 @@ func main() {
 	defer random.Close()
 
 	for n := 0; n < cnt; n++ {
-		generate(random, filter)
+		fmt.Println(generate(size, random, filter))
 	}
 }
 
@@ -62,7 +62,9 @@ func onError(s string, e error) int {
 
 /// generator ///////////////////////////////////////////////////////////
 
-func generate(random io.Reader, filter Filter) {
+func generate(size int, random io.Reader, filter Filter) string {
+
+	var password = make([]byte, size)
 
 	var b [1]byte
 	for i := 0; i < size; {
@@ -74,11 +76,11 @@ func generate(random io.Reader, filter Filter) {
 		c := uint8(b[0]) % 94
 		c += 33
 		if filter.accept(c) {
-			fmt.Printf("%c", c)
+			password[i] = byte(c)
 			i++
 		}
 	}
-	fmt.Println()
+	return string(password)
 }
 
 /// random source ///////////////////////////////////////////////////////
@@ -116,7 +118,6 @@ func newRand(seedPhrase string) (*rand.Rand, error) {
 	b := []byte(seedPhrase)
 
 	seed := time.Now().UnixNano()
-	seed0 := seed
 	shift := []uint{0, 8, 16, 24, 32, 40, 48, 56}
 	for i, c := range b {
 		c0 := ^int64(c) << shift[i%8]
