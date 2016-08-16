@@ -35,6 +35,7 @@ func init() {
 	flag.StringVar(&policy, "p", policy, "policy: {p:printable a:alpha n:num an:alphanum")
 }
 
+// REVU: good TODO is supporting specified special characters.
 func main() {
 	flag.Parse()
 	filter, e := newFilter(policy)
