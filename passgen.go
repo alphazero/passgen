@@ -37,9 +37,11 @@ func init() {
 
 func main() {
 	flag.Parse()
-	filter := newFilter(policy)
+	filter, e := newFilter(policy)
+	if e != nil {
+		os.Exit(onError("on init", e))
+	}
 
-	var random io.ReadCloser
 	random, e := getRandomSource(portable)
 	if e != nil {
 		os.Exit(onError("on open", e))
@@ -49,6 +51,11 @@ func main() {
 	for n := 0; n < cnt; n++ {
 		generate(random, filter)
 	}
+}
+
+func onError(s string, e error) int {
+	fmt.Fprintf(os.Stderr, "err - %s - %s\n", s, e.Error())
+	return 1
 }
 
 /// generator ///////////////////////////////////////////////////////////
@@ -74,16 +81,24 @@ func generate(random io.Reader, filter Filter) {
 
 /// random source ///////////////////////////////////////////////////////
 
+// Returns an entorpy source supporting the io.ReadCloser. If portable
+// is true, will use a cryptographic hash based source. Otherwise the OS
+// provided /dev/random is used.
 func getRandomSource(portable bool) (io.ReadCloser, error) {
 	if portable {
-		return newCryptoHashSource()
+		return newEntropySource()
 	}
 	return os.Open("/dev/random")
 }
 
+// portable entropy source type
 type entropy struct {
 	pool   [64]byte
 	offset int
+}
+
+func newEntropySource() (io.ReadCloser, error) {
+	return &entropy{offset: 64}, nil
 }
 
 // constrained support for io.Read interface. internal useage of  this
@@ -106,10 +121,6 @@ func (p *entropy) Read(b []byte) (int, error) {
 
 // nop
 func (p *entropy) Close() error { return nil }
-
-func newCryptoHashSource() (io.ReadCloser, error) {
-	return &entropy{offset: 64}, nil
-}
 
 /// filter //////////////////////////////////////////////////////////////
 
@@ -142,7 +153,7 @@ func (filter *Filter) initPrintable() {
 	}
 }
 
-func newFilter(policy string) (filter Filter) {
+func newFilter(policy string) (filter Filter, err error) {
 	switch policy {
 	case printable:
 		filter.initPrintable()
@@ -153,13 +164,8 @@ func newFilter(policy string) (filter Filter) {
 	case alphanumeric:
 		filter.initAlphaNumeric()
 	default:
-		os.Exit(onError(policy, fmt.Errorf("unknown policy flag")))
+		err = fmt.Errorf("unknown policy flag %q", policy)
 	}
 
 	return
-}
-
-func onError(s string, e error) int {
-	fmt.Fprintf(os.Stderr, "err - %s - %s\n", s, e.Error())
-	return 1
 }
