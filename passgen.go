@@ -10,6 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"math/rand"
 	"os"
 	"time"
 )
@@ -26,10 +27,10 @@ const (
 var policy = printable
 var size = 64
 var cnt = 1
-var portable bool
+var seedPhrase string
 
 func init() {
-	flag.BoolVar(&portable, "portable", portable, "use OS agnostic random source")
+	flag.StringVar(&seedPhrase, "input", seedPhrase, "seed phrase for OS agnostic random source")
 	flag.IntVar(&size, "s", size, "password-length")
 	flag.IntVar(&cnt, "n", cnt, "number of passwords to generate")
 	flag.StringVar(&policy, "p", policy, "policy: {p:printable a:alpha n:num an:alphanum")
@@ -43,7 +44,7 @@ func main() {
 		os.Exit(onError("on init", e))
 	}
 
-	random, e := getRandomSource(portable)
+	random, e := getRandomSource(seedPhrase)
 	if e != nil {
 		os.Exit(onError("on open", e))
 	}
@@ -82,24 +83,48 @@ func generate(random io.Reader, filter Filter) {
 
 /// random source ///////////////////////////////////////////////////////
 
-// Returns an entorpy source supporting the io.ReadCloser. If portable
+// Returns an entorpy source supporting the io.ReadCloser. If seedPhrase
 // is true, will use a cryptographic hash based source. Otherwise the OS
 // provided /dev/random is used.
-func getRandomSource(portable bool) (io.ReadCloser, error) {
-	if portable {
-		return newEntropySource()
+func getRandomSource(seedPhrase string) (io.ReadCloser, error) {
+	if seedPhrase == "" {
+		return os.Open("/dev/random")
 	}
-	return os.Open("/dev/random")
+	return newEntropySource(seedPhrase)
 }
 
-// portable entropy source type
+// seedPhrase entropy source type
 type entropy struct {
+	prng   *rand.Rand
 	pool   [64]byte
 	offset int
 }
 
-func newEntropySource() (io.ReadCloser, error) {
-	return &entropy{offset: 64}, nil
+func newEntropySource(seedPhrase string) (io.ReadCloser, error) {
+	prng, e := newRand(seedPhrase)
+	if e != nil {
+		return nil, e
+	}
+	return &entropy{prng: prng, offset: 64}, nil
+}
+
+// use time and provided seedPhrase to source a new prng
+func newRand(seedPhrase string) (*rand.Rand, error) {
+	if len(seedPhrase) < 8 {
+		return nil, fmt.Errorf("'input' must be at least 8 characters")
+	}
+	b := []byte(seedPhrase)
+
+	seed := time.Now().UnixNano()
+	seed0 := seed
+	shift := []uint{0, 8, 16, 24, 32, 40, 48, 56}
+	for i, c := range b {
+		c0 := ^int64(c) << shift[i%8]
+		seed ^= c0 | (seed >> shift[i%8])
+	}
+	seed = (seed << 33) | (seed >> 31)
+
+	return rand.New(rand.NewSource(seed)), nil
 }
 
 // constrained support for io.Read interface. internal useage of  this
@@ -111,7 +136,7 @@ func (p *entropy) Read(b []byte) (int, error) {
 		return 0, fmt.Errorf("BUG - entropy.Read usage error")
 	}
 	if p.offset == len(p.pool) {
-		p.pool = sha512.Sum512([]byte(fmt.Sprintf("%d", time.Now())))
+		p.pool = sha512.Sum512([]byte(fmt.Sprintf("%d%v", p.prng.Int63(), time.Now())))
 		p.offset = 0
 	}
 
