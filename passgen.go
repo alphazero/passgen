@@ -6,10 +6,12 @@
 package main
 
 import (
+	"crypto/sha512"
 	"flag"
 	"fmt"
 	"io"
 	"os"
+	"time"
 )
 
 /// tool ////////////////////////////////////////////////////////////////
@@ -74,13 +76,39 @@ func generate(random io.Reader, filter Filter) {
 
 func getRandomSource(portable bool) (io.ReadCloser, error) {
 	if portable {
-		return getCryptoHashSource()
+		return newCryptoHashSource()
 	}
 	return os.Open("/dev/random")
 }
 
-func getCryptoHashSource() (io.ReadCloser, error) {
-	return nil, fmt.Errorf("getCryptoHashSource not implemented!")
+type entropy struct {
+	pool   [64]byte
+	offset int
+}
+
+// constrained support for io.Read interface. internal useage of  this
+// function is always expected to provide buffer b of len 1 so functionally
+// it is more accurately an io.ByteReader but for sake of keeping things
+// simple it is more convenient to support the Reader api instead.
+func (p *entropy) Read(b []byte) (int, error) {
+	if len(b) > 1 {
+		return 0, fmt.Errorf("BUG - entropy.Read usage error")
+	}
+	if p.offset == len(p.pool) {
+		p.pool = sha512.Sum512([]byte(fmt.Sprintf("%d", time.Now())))
+		p.offset = 0
+	}
+
+	b[0] = p.pool[p.offset]
+	p.offset++
+	return 1, nil
+}
+
+// nop
+func (p *entropy) Close() error { return nil }
+
+func newCryptoHashSource() (io.ReadCloser, error) {
+	return &entropy{offset: 64}, nil
 }
 
 /// filter //////////////////////////////////////////////////////////////
