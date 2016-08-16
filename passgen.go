@@ -8,6 +8,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 )
 
@@ -21,8 +22,10 @@ const (
 var policy = printable
 var size = 64
 var cnt = 1
+var portable bool
 
 func init() {
+	flag.BoolVar(&portable, "portable", portable, "use OS agnostic random source")
 	flag.IntVar(&size, "s", size, "password-length")
 	flag.IntVar(&cnt, "n", cnt, "number of passwords to generate")
 	flag.StringVar(&policy, "p", policy, "policy: {p:printable a:alpha n:num an:alphanum")
@@ -32,31 +35,44 @@ func main() {
 	flag.Parse()
 	filter := newFilter(policy)
 
-	for n := 0; n < cnt; n++ {
-		generate(filter)
-	}
-}
-
-func generate(filter Filter) {
-	f, e := os.Open("/dev/random")
+	var random io.ReadCloser
+	random, e := getRandomSource(portable)
 	if e != nil {
 		os.Exit(onError("on open", e))
 	}
+	defer random.Close()
+
+	for n := 0; n < cnt; n++ {
+		generate(random, filter)
+	}
+}
+
+func getRandomSource(portable bool) (io.ReadCloser, error) {
+	if portable {
+		return getCryptoHashSource()
+	}
+	return os.Open("/dev/random")
+}
+
+func getCryptoHashSource() (io.ReadCloser, error) {
+	return nil, fmt.Errorf("getCryptoHashSource not implemented!")
+}
+
+func generate(random io.Reader, filter Filter) {
 
 	var b [1]byte
 	for i := 0; i < size; {
-		_, e = f.Read(b[:])
+		_, e := random.Read(b[:])
 		if e != nil {
 			os.Exit(onError("on read", e))
 		}
 
 		c := uint8(b[0]) % 94
 		c += 33
-		if !filter.accept(c) {
-			continue
+		if filter.accept(c) {
+			fmt.Printf("%c", c)
+			i++
 		}
-		fmt.Printf("%c", c)
-		i++
 	}
 	fmt.Println()
 }
