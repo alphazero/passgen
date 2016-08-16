@@ -12,6 +12,8 @@ import (
 	"os"
 )
 
+/// tool ////////////////////////////////////////////////////////////////
+
 const (
 	printable    = "p"
 	alpha        = "a"
@@ -47,16 +49,7 @@ func main() {
 	}
 }
 
-func getRandomSource(portable bool) (io.ReadCloser, error) {
-	if portable {
-		return getCryptoHashSource()
-	}
-	return os.Open("/dev/random")
-}
-
-func getCryptoHashSource() (io.ReadCloser, error) {
-	return nil, fmt.Errorf("getCryptoHashSource not implemented!")
-}
+/// generator ///////////////////////////////////////////////////////////
 
 func generate(random io.Reader, filter Filter) {
 
@@ -76,6 +69,21 @@ func generate(random io.Reader, filter Filter) {
 	}
 	fmt.Println()
 }
+
+/// random source ///////////////////////////////////////////////////////
+
+func getRandomSource(portable bool) (io.ReadCloser, error) {
+	if portable {
+		return getCryptoHashSource()
+	}
+	return os.Open("/dev/random")
+}
+
+func getCryptoHashSource() (io.ReadCloser, error) {
+	return nil, fmt.Errorf("getCryptoHashSource not implemented!")
+}
+
+/// filter //////////////////////////////////////////////////////////////
 
 type Filter [256]bool
 
