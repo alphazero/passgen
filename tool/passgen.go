@@ -18,19 +18,26 @@ var policy = passgen.Printable
 var size = 64
 var cnt = 1
 var seedPhrase string
+var specials string
 
 func init() {
 	flag.StringVar(&seedPhrase, "input", seedPhrase, "seed phrase for OS agnostic random source")
 	flag.IntVar(&size, "s", size, "password-length")
 	flag.IntVar(&cnt, "n", cnt, "number of passwords to generate")
 	flag.StringVar(&policy, "p", policy, "policy: {p:printable a:alpha n:num an:alphanum")
+	flag.StringVar(&specials, "x", specials, "include special chars - should be quoted")
 }
 
 // REVU: good TODO is supporting specified special characters.
 func main() {
 	flag.Parse()
 
-	generator, e := passgen.New(policy, seedPhrase)
+	spec := passgen.Spec{
+		Policy:       policy,
+		SeedPhrase:   seedPhrase,
+		SpecialChars: specials,
+	}
+	generator, e := passgen.New(spec)
 	if e != nil {
 		os.Exit(onError("new generator", e))
 	}

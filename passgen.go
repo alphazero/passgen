@@ -30,6 +30,12 @@ const (
 	Alphanumeric = "an" // Alpha and Numeric policies combined.
 )
 
+type Spec struct {
+	Policy       string
+	SeedPhrase   string
+	SpecialChars string
+}
+
 // Password generator type
 type Generator struct {
 	random io.ReadCloser
@@ -44,14 +50,14 @@ type Generator struct {
 //
 // Note that OS based generator must be disposed to close the underlying OS
 // file. See Generator.Dispose()
-func New(policy string, seedPhrase string) (*Generator, error) {
+func New(spec Spec) (*Generator, error) {
 
-	filter, e := newFilter(policy)
+	filter, e := newFilter(spec)
 	if e != nil {
 		return nil, fmt.Errorf("filter init - %s", e)
 	}
 
-	random, e := getRandomSource(seedPhrase)
+	random, e := getRandomSource(spec.SeedPhrase)
 	if e != nil {
 		return nil, fmt.Errorf("entropy source init - %x", e)
 	}
@@ -178,14 +184,22 @@ func (filter *Filter) initAlphaNumeric() {
 	filter.initNumeric()
 }
 
+func (filter *Filter) addExtended(specialChars string) {
+	//	for _, b := range []byte(specialChars) {
+	for _, b := range specialChars {
+		c := uint8(b)
+		filter[c] = true
+	}
+}
+
 func (filter *Filter) initPrintable() {
 	for i := 33; i < 127; i++ {
 		filter[i] = true
 	}
 }
 
-func newFilter(policy string) (filter Filter, err error) {
-	switch policy {
+func newFilter(spec Spec) (filter Filter, err error) {
+	switch spec.Policy {
 	case Printable:
 		filter.initPrintable()
 	case Alpha:
@@ -195,8 +209,9 @@ func newFilter(policy string) (filter Filter, err error) {
 	case Alphanumeric:
 		filter.initAlphaNumeric()
 	default:
-		err = fmt.Errorf("unknown policy flag %q", policy)
+		err = fmt.Errorf("unknown policy flag %q", spec.Policy)
 	}
+	filter.addExtended(spec.SpecialChars)
 
 	return
 }
