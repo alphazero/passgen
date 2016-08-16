@@ -1,13 +1,13 @@
-// friend!
+// Friend!
+
 // Copyright 2016 Joubin Houshyar. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package main
+package passgen
 
 import (
 	"crypto/sha512"
-	"flag"
 	"fmt"
 	"io"
 	"math/rand"
@@ -15,52 +15,14 @@ import (
 	"time"
 )
 
-/// tool ////////////////////////////////////////////////////////////////
+/// generator ///////////////////////////////////////////////////////////
 
 const (
-	printable    = "p"
-	alpha        = "a"
-	numeric      = "n"
-	alphanumeric = "an"
+	Printable    = "p"
+	Alpha        = "a"
+	Numeric      = "n"
+	Alphanumeric = "an"
 )
-
-var policy = printable
-var size = 64
-var cnt = 1
-var seedPhrase string
-
-func init() {
-	flag.StringVar(&seedPhrase, "input", seedPhrase, "seed phrase for OS agnostic random source")
-	flag.IntVar(&size, "s", size, "password-length")
-	flag.IntVar(&cnt, "n", cnt, "number of passwords to generate")
-	flag.StringVar(&policy, "p", policy, "policy: {p:printable a:alpha n:num an:alphanum")
-}
-
-// REVU: good TODO is supporting specified special characters.
-func main() {
-	flag.Parse()
-
-	generator, e := New(policy, seedPhrase)
-	if e != nil {
-		os.Exit(onError("new generator", e))
-	}
-	defer generator.Dispose()
-
-	for n := 0; n < cnt; n++ {
-		password, e := generator.Generate(size)
-		if e != nil {
-			os.Exit(onError("new generator", e))
-		}
-		fmt.Println(password)
-	}
-}
-
-func onError(s string, e error) int {
-	fmt.Fprintf(os.Stderr, "err - %s - %s\n", s, e.Error())
-	return 1
-}
-
-/// generator ///////////////////////////////////////////////////////////
 
 type Generator struct {
 	random io.ReadCloser
@@ -205,13 +167,13 @@ func (filter *Filter) initPrintable() {
 
 func newFilter(policy string) (filter Filter, err error) {
 	switch policy {
-	case printable:
+	case Printable:
 		filter.initPrintable()
-	case alpha:
+	case Alpha:
 		filter.initAlpha()
-	case numeric:
+	case Numeric:
 		filter.initNumeric()
-	case alphanumeric:
+	case Alphanumeric:
 		filter.initAlphaNumeric()
 	default:
 		err = fmt.Errorf("unknown policy flag %q", policy)
