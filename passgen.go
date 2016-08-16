@@ -4,6 +4,11 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// package passgen provides a basic secure password generator. The
+// generated passwords are not memorable but are be highly secure.
+//
+// The generated passwords are of arbitrary length, and conform to
+// a basic set of password policies.
 package passgen
 
 import (
@@ -17,18 +22,28 @@ import (
 
 /// generator ///////////////////////////////////////////////////////////
 
+// password policies
 const (
-	Printable    = "p"
-	Alpha        = "a"
-	Numeric      = "n"
-	Alphanumeric = "an"
+	Printable    = "p"  // any printable character in range (33, 126)
+	Alpha        = "a"  // mixed case roman alphabet letters
+	Numeric      = "n"  // numeric digits in range (0, 9)
+	Alphanumeric = "an" // Alpha and Numeric policies combined.
 )
 
+// Password generator type
 type Generator struct {
 	random io.ReadCloser
 	filter Filter
 }
 
+// Creates a new Generator with given policy. The provided generator uses
+// the OS provided entropy source /dev/random if parameter 'seedPhrase' is
+// zerovalue (""). If a seedPhrase is provided, then an OS agnostic entropy
+// source is used. The provided seedPhrase must be 8 or more characters in
+// length.
+//
+// Note that OS based generator must be disposed to close the underlying OS
+// file. See Generator.Dispose()
 func New(policy string, seedPhrase string) (*Generator, error) {
 
 	filter, e := newFilter(policy)
@@ -44,10 +59,14 @@ func New(policy string, seedPhrase string) (*Generator, error) {
 	return &Generator{random, filter}, nil
 }
 
+// Frees all associated resources including OS files, if any.
 func (p *Generator) Dispose() {
 	p.random.Close()
 }
 
+// Generates a password of the specified length. An error condition by
+// this method is typically unexpected and should be trated as a system
+// level fault.
 func (p *Generator) Generate(size int) (string, error) {
 	var password = make([]byte, size)
 
