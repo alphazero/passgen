@@ -39,19 +39,19 @@ func init() {
 // REVU: good TODO is supporting specified special characters.
 func main() {
 	flag.Parse()
-	filter, e := newFilter(policy)
-	if e != nil {
-		os.Exit(onError("on init", e))
-	}
 
-	random, e := getRandomSource(seedPhrase)
+	generator, e := New(policy, seedPhrase)
 	if e != nil {
-		os.Exit(onError("on open", e))
+		os.Exit(onError("new generator", e))
 	}
-	defer random.Close()
+	defer generator.Dispose()
 
 	for n := 0; n < cnt; n++ {
-		fmt.Println(generate(size, random, filter))
+		password, e := generator.Generate(size)
+		if e != nil {
+			os.Exit(onError("new generator", e))
+		}
+		fmt.Println(password)
 	}
 }
 
@@ -62,25 +62,48 @@ func onError(s string, e error) int {
 
 /// generator ///////////////////////////////////////////////////////////
 
-func generate(size int, random io.Reader, filter Filter) string {
+type Generator struct {
+	random io.ReadCloser
+	filter Filter
+}
 
+func New(policy string, seedPhrase string) (*Generator, error) {
+
+	filter, e := newFilter(policy)
+	if e != nil {
+		return nil, fmt.Errorf("filter init - %s", e)
+	}
+
+	random, e := getRandomSource(seedPhrase)
+	if e != nil {
+		return nil, fmt.Errorf("entropy source init - %x", e)
+	}
+
+	return &Generator{random, filter}, nil
+}
+
+func (p *Generator) Dispose() {
+	p.random.Close()
+}
+
+func (p *Generator) Generate(size int) (string, error) {
 	var password = make([]byte, size)
 
 	var b [1]byte
 	for i := 0; i < size; {
-		_, e := random.Read(b[:])
+		_, e := p.random.Read(b[:])
 		if e != nil {
-			os.Exit(onError("on read", e))
+			return "", fmt.Errorf("unexpected error reading from random source - %s", e.Error())
 		}
 
 		c := uint8(b[0]) % 94
 		c += 33
-		if filter.accept(c) {
+		if p.filter.accept(c) {
 			password[i] = byte(c)
 			i++
 		}
 	}
-	return string(password)
+	return string(password), nil
 }
 
 /// random source ///////////////////////////////////////////////////////
