@@ -1,4 +1,4 @@
-![image](./resources/passgen.png)
+![image](./resources/passgen-logo.png)
 
 ##about
 
@@ -8,19 +8,19 @@ PassGen is a basic secure password generation package and associated cmdline too
 
 * **Alpha** - mixed cased roman alphabet passwords
 
-     ex: fdUhcJupKPzOIKBaLfqe
+      ex: fdUhcJupKPzOIKBaLfqe
 
 * **Numeric** - numeric digits in range 0-9
 
-     ex: 92167663796913288031
+      ex: 92167663796913288031
 
 * **AlphaNumeric** - combined Alpha and Numeric policies
 
-     ex: Wll77E6bm6TA25agYu60
+      ex: Wll77E6bm6TA25agYu60
 
 * **Printable** - ascii characters in range 33-126 inclusive
 
-     ex: AZn#))q<(m*f42F"+&9-
+      ex: AZn#))q<(m*f42F"+&9-
 
 * **Special Characters** - any of the basic policies, minus the all inclusive **Printable** policy -- can be augmented with specifying a string consisting of candidate "special characters". (*Note that per your command line shell, you may need to suitably escape the special character string.*)
 
@@ -28,7 +28,7 @@ PassGen is a basic secure password generation package and associated cmdline too
 
 * **No repeated seequences** - any of the basic policies can be augmented with specifying a non-reptition of password character sequences. (*Note that while some authorized domains specify this behavior, the use of non-repeated flag reduces the space of possible passwords.*)
 
-      ex: 14356954843130739693 -- given Numeric policy with no reptition constraint.
+      ex: 14356954843130739693 -- given Numeric policy with no repetition constraint.
 
 
 ##usage

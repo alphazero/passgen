@@ -145,7 +145,7 @@ func newRand(seedPhrase string) (*rand.Rand, error) {
 	return rand.New(rand.NewSource(seed)), nil
 }
 
-// constrained support for io.Read interface. internal useage of  this
+// constrained support for io.Reader interface. Internal useage of this
 // function is always expected to provide buffer b of len 1 so functionally
 // it is more accurately an io.ByteReader but for sake of keeping things
 // simple it is more convenient to support the Reader api instead.
@@ -192,7 +192,6 @@ func (filter *Filter) initAlphaNumeric() {
 }
 
 func (filter *Filter) addExtended(specialChars string) {
-	//	for _, b := range []byte(specialChars) {
 	for _, b := range specialChars {
 		c := uint8(b)
 		filter[c] = true
