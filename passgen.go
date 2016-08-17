@@ -16,7 +16,6 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
-	"os"
 	"time"
 )
 
@@ -41,7 +40,7 @@ type Spec struct {
 // Password generator type
 type Generator struct {
 	spec   Spec
-	random io.ReadCloser
+	random io.ByteReader
 	filter Filter
 }
 
@@ -68,26 +67,20 @@ func New(spec Spec) (*Generator, error) {
 	return &Generator{spec, random, filter}, nil
 }
 
-// Frees all associated resources including OS files, if any.
-func (p *Generator) Dispose() {
-	p.random.Close()
-}
-
 // Generates a password of the specified length. An error condition by
 // this method is typically unexpected and should be trated as a system
 // level fault.
 func (p *Generator) Generate(size int) (string, error) {
 	var password = make([]byte, size)
 
-	var b [1]byte
 	var last uint8 = 127 // DEL can be used as zerovalue
 	for i := 0; i < size; {
-		_, e := p.random.Read(b[:])
+		b, e := p.random.ReadByte()
 		if e != nil {
 			return "", fmt.Errorf("unexpected error reading from random source - %s", e)
 		}
 
-		c := uint8(b[0]) % 94
+		c := uint8(b) % 94
 		c += 33
 		if p.filter.accept(c) {
 			if !p.spec.NoRep || last != c {
@@ -105,10 +98,7 @@ func (p *Generator) Generate(size int) (string, error) {
 // Returns an entorpy source supporting the io.ReadCloser. If seedPhrase
 // is true, will use a cryptographic hash based source. Otherwise the OS
 // provided /dev/random is used.
-func getRandomSource(seedPhrase string) (io.ReadCloser, error) {
-	if seedPhrase == "" {
-		return os.Open("/dev/random")
-	}
+func getRandomSource(seedPhrase string) (io.ByteReader, error) {
 	return newEntropySource(seedPhrase)
 }
 
@@ -119,7 +109,7 @@ type entropy struct {
 	offset int
 }
 
-func newEntropySource(seedPhrase string) (io.ReadCloser, error) {
+func newEntropySource(seedPhrase string) (io.ByteReader, error) {
 	prng, e := newRand(seedPhrase)
 	if e != nil {
 		return nil, e
@@ -145,26 +135,17 @@ func newRand(seedPhrase string) (*rand.Rand, error) {
 	return rand.New(rand.NewSource(seed)), nil
 }
 
-// constrained support for io.Reader interface. Internal useage of this
-// function is always expected to provide buffer b of len 1 so functionally
-// it is more accurately an io.ByteReader but for sake of keeping things
-// simple it is more convenient to support the Reader api instead.
-func (p *entropy) Read(b []byte) (int, error) {
-	if len(b) > 1 {
-		return 0, fmt.Errorf("BUG - entropy.Read usage error")
-	}
+// support for io.ByteReader
+func (p *entropy) ReadByte() (b byte, err error) {
 	if p.offset == len(p.pool) {
 		p.pool = sha512.Sum512([]byte(fmt.Sprintf("%d%v", p.prng.Int63(), time.Now())))
 		p.offset = 0
 	}
 
-	b[0] = p.pool[p.offset]
+	b = p.pool[p.offset]
 	p.offset++
-	return 1, nil
+	return
 }
-
-// nop
-func (p *entropy) Close() error { return nil }
 
 /// filter //////////////////////////////////////////////////////////////
 

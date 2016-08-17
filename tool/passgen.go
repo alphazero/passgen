@@ -22,7 +22,7 @@ var specials string
 var noRep bool
 
 func init() {
-	flag.StringVar(&seedPhrase, "input", seedPhrase, "seed phrase for OS agnostic random source")
+	flag.StringVar(&seedPhrase, "seed", seedPhrase, "(min 8 char) seed phrase for random source - required")
 	flag.IntVar(&size, "s", size, "password-length")
 	flag.IntVar(&cnt, "n", cnt, "number of passwords to generate")
 	flag.StringVar(&policy, "p", policy, "policy: {p:printable a:alpha n:num an:alphanum")
@@ -32,6 +32,10 @@ func init() {
 
 func main() {
 	flag.Parse()
+
+	if seedPhrase == "" {
+		os.Exit(onError("usage", fmt.Errorf("cmdline option 'seed' is required.")))
+	}
 
 	spec := passgen.Spec{
 		Policy:       policy,
@@ -43,7 +47,6 @@ func main() {
 	if e != nil {
 		os.Exit(onError("new generator", e))
 	}
-	defer generator.Dispose()
 
 	for n := 0; n < cnt; n++ {
 		password, e := generator.Generate(size)
