@@ -28,7 +28,6 @@ func init() {
 	flag.StringVar(&specials, "x", specials, "include special chars - should be quoted")
 }
 
-// REVU: good TODO is supporting specified special characters.
 func main() {
 	flag.Parse()
 

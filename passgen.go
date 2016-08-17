@@ -30,10 +30,11 @@ const (
 	Alphanumeric = "an" // Alpha and Numeric policies combined.
 )
 
+// type Spec encapsulates Generator initialization spec.
 type Spec struct {
 	Policy       string
-	SeedPhrase   string
-	SpecialChars string
+	SeedPhrase   string // optional - may be zerovalue/""
+	SpecialChars string // optional - may be zerovalue/""
 }
 
 // Password generator type
@@ -80,7 +81,7 @@ func (p *Generator) Generate(size int) (string, error) {
 	for i := 0; i < size; {
 		_, e := p.random.Read(b[:])
 		if e != nil {
-			return "", fmt.Errorf("unexpected error reading from random source - %s", e.Error())
+			return "", fmt.Errorf("unexpected error reading from random source - %s", e)
 		}
 
 		c := uint8(b[0]) % 94
@@ -120,10 +121,10 @@ func newEntropySource(seedPhrase string) (io.ReadCloser, error) {
 	return &entropy{prng: prng, offset: 64}, nil
 }
 
-// use time and provided seedPhrase to source a new prng
+// use time and provided seedPhrase to source a new prng.
 func newRand(seedPhrase string) (*rand.Rand, error) {
 	if len(seedPhrase) < 8 {
-		return nil, fmt.Errorf("'input' must be at least 8 characters")
+		return nil, fmt.Errorf("'seedPhrase' must be at least 8 characters")
 	}
 	b := []byte(seedPhrase)
 
