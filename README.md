@@ -2,7 +2,9 @@
 
 ##about
 
-PassGen is a basic secure password generation package and associated cmdline tool. Generated passwords can be of arbitrary length, and conform to the following **basic policies**:
+PassGen is a basic secure password generation package and associated cmdline tool. Generated passwords can be of arbitrary length, and conform to a few **basic policies**.
+
+###password policies
 
 * **Alpha** - mixed cased roman alphabet passwords
 
@@ -23,6 +25,10 @@ PassGen is a basic secure password generation package and associated cmdline too
 * **Special Characters** - any of the basic policies, minus the all inclusive **Printable** policy -- can be augmented with specifying a string consisting of candidate "special characters". (*Note that per your command line shell, you may need to suitably escape the special character string.*)
 
       ex: ]06.8!2[699/][6[61\0 -- given Numeric policy with ".[]!\/" special characters spec.
+
+* **No repeated seequences** - any of the basic policies can be augmented with specifying a non-reptition of password character sequences. (*Note that while some authorized domains specify this behavior, the use of non-repeated flag reduces the space of possible passwords.*)
+
+      ex: 14356954843130739693 -- given Numeric policy with no reptition constraint.
 
 
 ##usage

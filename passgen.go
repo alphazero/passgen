@@ -35,10 +35,12 @@ type Spec struct {
 	Policy       string
 	SeedPhrase   string // optional - may be zerovalue/""
 	SpecialChars string // optional - may be zerovalue/""
+	NoRep        bool   // disallow repeated sequences
 }
 
 // Password generator type
 type Generator struct {
+	spec   Spec
 	random io.ReadCloser
 	filter Filter
 }
@@ -63,7 +65,7 @@ func New(spec Spec) (*Generator, error) {
 		return nil, fmt.Errorf("entropy source init - %x", e)
 	}
 
-	return &Generator{random, filter}, nil
+	return &Generator{spec, random, filter}, nil
 }
 
 // Frees all associated resources including OS files, if any.
@@ -78,6 +80,7 @@ func (p *Generator) Generate(size int) (string, error) {
 	var password = make([]byte, size)
 
 	var b [1]byte
+	var last uint8 = 127 // DEL can be used as zerovalue
 	for i := 0; i < size; {
 		_, e := p.random.Read(b[:])
 		if e != nil {
@@ -87,8 +90,11 @@ func (p *Generator) Generate(size int) (string, error) {
 		c := uint8(b[0]) % 94
 		c += 33
 		if p.filter.accept(c) {
-			password[i] = byte(c)
-			i++
+			if !p.spec.NoRep || last != c {
+				password[i] = byte(c)
+				last = c
+				i++
+			}
 		}
 	}
 	return string(password), nil

@@ -19,6 +19,7 @@ var size = 64
 var cnt = 1
 var seedPhrase string
 var specials string
+var noRep bool
 
 func init() {
 	flag.StringVar(&seedPhrase, "input", seedPhrase, "seed phrase for OS agnostic random source")
@@ -26,6 +27,7 @@ func init() {
 	flag.IntVar(&cnt, "n", cnt, "number of passwords to generate")
 	flag.StringVar(&policy, "p", policy, "policy: {p:printable a:alpha n:num an:alphanum")
 	flag.StringVar(&specials, "x", specials, "include special chars - should be quoted")
+	flag.BoolVar(&noRep, "norep", noRep, "no repeated sequences")
 }
 
 func main() {
@@ -35,6 +37,7 @@ func main() {
 		Policy:       policy,
 		SeedPhrase:   seedPhrase,
 		SpecialChars: specials,
+		NoRep:        noRep,
 	}
 	generator, e := passgen.New(spec)
 	if e != nil {
