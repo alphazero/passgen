@@ -1,10 +1,10 @@
 ![image](./resources/passgen-logo.png)
 
-##about
+## about
 
 PassGen is a basic secure password generation package and associated cmdline tool. Generated passwords can be of arbitrary length, and conform to a few **basic policies**.
 
-###password policies
+### password policies
 
 * **Alpha** - mixed cased roman alphabet passwords
 
@@ -31,7 +31,7 @@ PassGen is a basic secure password generation package and associated cmdline too
       ex: 14356954843130739693 -- given Numeric policy with no repetition constraint.
 
 
-##usage
+## usage
 
 Refer to the provided example cmdline tool.
 
